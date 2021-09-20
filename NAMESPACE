@@ -1,0 +1,10 @@
+import(KEGGREST)
+import(SummarizedExperiment)
+import(dplyr)
+import(magrittr)
+importFrom(tibble,as_tibble,column_to_rownames)
+importFrom(igraph, V, graph.laplacian)
+
+export(GatherNetworks)
+export(PaIRKAT)
+export(plotNetworks)
