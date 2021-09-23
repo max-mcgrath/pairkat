@@ -7,8 +7,8 @@
 GatherNetworks(SE, keggID = "KEGG", species = "hsa", minPathwaySize = 5)
 }
 \arguments{
-\item{SE}{A \code{\link[SummarizedExperiment]{SummarizedExperiment}} with 
-the features of interest in the 
+\item{SE}{A \code{\link[SummarizedExperiment]{SummarizedExperiment}} with
+the features of interest in the
 first \code{\link[SummarizedExperiment]{assay}}.}
 
 \item{keggID}{column name in pathway data containing KEGG IDs}
@@ -18,7 +18,7 @@ first \code{\link[SummarizedExperiment]{assay}}.}
 \item{minPathwaySize}{Filter pathways that are below a minimum size}
 }
 \value{
-a list object containing the original SummarizedExperiment and 
+a list object containing the original SummarizedExperiment and
 igraph network objects
 }
 \description{
@@ -26,21 +26,16 @@ Takes a \code{\link[SummarizedExperiment]{SummarizedExperiment}}
  and constructs a list with KEGG pathways
 }
 \details{
-Queries KEGG database for known molecular interactions between 
+Queries KEGG database for known molecular interactions between
 included metabolites via the KEGGREST API.
 }
 \examples{
 
 library(SummarizedExperiment)
-data(phenotype)
-data(pathways)
-data(metabolome)
-smokers <- SummarizedExperiment(assays = list(metabolomics = metabolome),
-rowData = pathways,
-colData = phenotype)
+data(smokers)
 # Query KEGGREST API
 
-networks <- GatherNetworks(SE = smokers, keggID = "kegg_id", 
+networks <- GatherNetworks(SE = smokers, keggID = "kegg_id",
 species = "hsa", minPathwaySize = 5)
 
 }

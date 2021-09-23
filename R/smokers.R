@@ -1,0 +1,17 @@
+#' Smokers - PaIRKAT Example Data
+#' 
+#' A synthetic data set of human subjects with phenotype variables related to 
+#' lung health among smokers. Subjects have associated metabolomics assay
+#' data that are linked to KEGG pathway database IDs. 
+#'
+#' @format A SummarizedExperiment S4 object containing the following components
+#' \describe{
+#'    \item{\code{phenotype}}{A dataframe containing phenotype variables and 
+#'    outcomes of interest. Row names are subject IDs.}
+#'    \item{\code{pathways}}{A dataframe containing pathway database identifiers
+#'    (i.e. KEGG IDs). Row names are metabolite names}
+#'    \item{\code{metabalome}}{A dataframe containing a metabolomics assay. 
+#'    Row names are metabolite names and column names are subject IDs.}
+#' }
+#' @usage data(smokers)
+"smokers"

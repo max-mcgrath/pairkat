@@ -31,10 +31,13 @@ Description: PaIRKAT is model framework for assessing statistical relationships
 License: GPL-3
 Encoding: UTF-8
 Depends: 
-    R (>= 4.1.1),
+    R (>= 4.1),
     KEGGREST,
     SummarizedExperiment,
-    igraph
+    igraph,
+    data.table,
+    methods,
+    stats
 Imports: 
     dplyr,
     magrittr,
@@ -44,5 +47,6 @@ biocViews: Software, Metabolomics, KEGG, Pathways, Network, GraphAndNetwork, Reg
 RoxygenNote: 7.1.2
 Suggests: 
     rmarkdown,
-    knitr
+    knitr,
+    BiocStyle
 VignetteBuilder: knitr

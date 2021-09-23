@@ -40,13 +40,30 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Introduction
 
-PaIRKAT is model framework for assessing statistical relationships between networks of metabolites (pathways) and an outcome of interest (phenotype). PaIRKAT queries the KEGG database to determine interactions between metabolites from which network connectivity is constructed. This model framework improves testing power on high dimensional data by including graph topography in the kernel machine regression setting. Studies on high dimensional data can struggle to include the complex relationships between variables. The semi-parametric kernel machine regression model is a powerful tool for capturing these types of relationships. They provide a framework for testing for relationships between outcomes of interest and high dimensional data such as metabolomic, genomic, or proteomic pathways. PaIRKAT uses known biological connections between high dimensional variables by representing them as edges of ‘graphs’ or ‘networks.’ It is common for nodes (e.g. metabolites) to be disconnected from all others within the graph, which leads to meaningful decreases in testing power whether or not the graph information is included. We include a graph regularization or ‘smoothing’ approach for managing this issue.
+PaIRKAT is model framework for assessing statistical relationships between 
+networks of metabolites (pathways) and an outcome of interest (phenotype). 
+PaIRKAT queries the KEGG database to determine interactions between 
+metabolites from which network connectivity is constructed. This model 
+framework improves testing power on high dimensional data by including 
+graph topography in the kernel machine regression setting. Studies on high 
+dimensional data can struggle to include the complex relationships between 
+variables. The semi-parametric kernel machine regression model is a powerful 
+tool for capturing these types of relationships. They provide a framework for 
+testing for relationships between outcomes of interest and high dimensional 
+data such as metabolomic, genomic, or proteomic pathways. PaIRKAT uses known 
+biological connections between high dimensional variables by representing them 
+as edges of ‘graphs’ or ‘networks.’ It is common for nodes (e.g. metabolites) 
+to be disconnected from all others within the graph, which leads to meaningful 
+decreases in testing power whether or not the graph information is included. 
+We include a graph regularization or ‘smoothing’ approach for managing 
+this issue.
 
 # Installation
 
@@ -58,33 +75,56 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("pairkat")
 ```
 
+# Load pairkat library and example data
+
+PaIRKAT comes with an example data set to use as a reference when formatting 
+data inputs to its functions. This synthetic dataset called "smokers" contains 
+a set of human subjects with phenotype variables related to 
+lung health among smokers. Subjects have associated metabolomics assay data 
+that are linked to KEGG pathway database IDs. 
+
 ```{r, message=F, warning = F, results='hide'}
 # load pairkat library
 library(pairkat)
-library(tidyverse)
+data("smokers")
 ```
 
 # Create a summarized experiment object
 
-Data need to be added to a SummarizedExperiment class object before they can be analyzed with PaIRKAT. There are three components of the SummarizedExperiment that need to be added:
+Data need to be added to a SummarizedExperiment class object before they can 
+be analyzed with PaIRKAT. There are three components of the 
+SummarizedExperiment that need to be added:
 
-1. Phenotype Data: Contains outcomes of interest and any meaningful covariates to be adjusted for. Rows should be subjects and columns should be variables.
+1. Phenotype Data: Contains outcomes of interest and any meaningful covariates 
+to be adjusted for. Rows should be subjects and columns should be variables.
 
-2. Pathway Data: Maps measured metabolites names to KEGG IDs in order to query the KEGG database. Rows are metabolite names and one column should contain KEGG IDs.
+2. Pathway Data: Maps measured metabolites names to KEGG IDs in order to query 
+the KEGG database. Rows are metabolite names and one column should contain 
+KEGG IDs.
 
-3. Metabolite Assay: Contains measurements of metabolites for all subjects. Rows should be subjects and columns should be metabolite names. One column should have subject IDs matching subject IDs in clinical data.
+3. Metabolite Assay: Contains measurements of metabolites for all subjects. 
+Rows should be subjects and columns should be metabolite names. One column 
+should have subject IDs matching subject IDs in clinical data.
 
 We will walk through each of these data and discuss their formats.
 
 ## Phenotype Data
 
-Phenotype data should be formatted such that subject ID's are row names and variables of interest are column names. Categorical variables should be converted to dummy variables (i.e. one-hot-encoded). 
+Phenotype data should be formatted such that subject ID's are row names and 
+variables of interest are column names. Categorical variables should be 
+converted to dummy variables (i.e. one-hot-encoded). 
 
-In our example, we will be working with a data set containing measures related to lung health among smokers. Variables in this data set include:
+In our example, we will be working with a data set containing measures related 
+to lung health among smokers. Variables in this data set include:
 
-`log_FEV1_FVC_ratio`: [log(FEV1/FVC)] A measure of lung capacity. The FEV1/FVC ratio is the ratio of the forced expiratory volume in the first one second to the forced vital capacity of the lungs. This measure has been log transformed.
+`log_FEV1_FVC_ratio`: [log(FEV1/FVC)] A measure of lung capacity. 
+The FEV1/FVC ratio is the ratio of the forced expiratory volume in the first 
+one second to the forced vital capacity of the lungs. This measure has been 
+log transformed.
 
-`high_log_FEV1_FVC_ratio_binary`: A binarized transformation of `log_FEV1_FVC_ratio` which indicates whether `log_FEV1_FVC_ratio` is "high" with a 1, otherwise 0.
+`high_log_FEV1_FVC_ratio_binary`: A binarized transformation of 
+`log_FEV1_FVC_ratio` which indicates whether `log_FEV1_FVC_ratio` is "high" 
+with a 1, otherwise 0.
 
 `race_binary`: A binary indicator of race. 
 
@@ -92,36 +132,46 @@ In our example, we will be working with a data set containing measures related t
 
 `bmi`: Body Mass Index
 
-`smoking_status`: Binary indicator of whether a subject is a current smoker (1) or not (0)
+`smoking_status`: Binary indicator of whether a subject is a current smoker 
+(1) or not (0)
 
-`pack_years`: A way to measure the amount a person has smoked over a long period of time. It is calculated by multiplying the number of packs of cigarettes smoked per day by the number of years the person has smoked.
+`pack_years`: A way to measure the amount a person has smoked over a long 
+period of time. It is calculated by multiplying the number of packs of 
+cigarettes smoked per day by the number of years the person has smoked.
+
+
 
 ```{r, message=F, warning = F}
-data("phenotype")
+phenotype <- colData(smokers)
 head(phenotype)
 ```
 
 ## Pathway Data
 
-Pathway data primarily functions to link metabolite names with KEGG ID's. Row names should be metabolite names and one column should contain KEGG IDs. Other columns may be present if desired.
+Pathway data primarily functions to link metabolite names with KEGG ID's. 
+Row names should be metabolite names and one column should contain KEGG IDs. 
+Other columns may be present if desired.
 
 ```{r}
-data("pathways")
-head(pathways)[,1:2]
+pathways <- rowData(smokers)
+head(pathways)[, 1:2]
 ```
 
 ## Metabolite Assay
 
-Metabolite assay data should have metabolite names as row names (matching pathway data names) and subject IDs as column names.
+Metabolite assay data should have metabolite names as row names (matching 
+pathway data names) and subject IDs as column names.
 
 ```{r}
-data("metabolome")
-head(metabolome)[,1:3] 
+metabolome <- assays(smokers)$metabolomics
+head(metabolome)[, 1:3] 
 ```
 
 ## Create the Summarized Experiment Object
 
-Once the three components are formatted correctly, it is straightforward to add these dataframes to the SummarizedExperiment object with the SummarizedExperiment function.
+Once the three components are formatted correctly, it is straightforward to 
+add these dataframes to the SummarizedExperiment object with the 
+SummarizedExperiment function.
 
 In this example, we save our SummarizedExperiment to an object called `smokers`
 
@@ -129,15 +179,19 @@ In this example, we save our SummarizedExperiment to an object called `smokers`
 #load SummarizedExperiment library
 library(SummarizedExperiment)
 
-smokers <- SummarizedExperiment(assays = list(metabolomics = metabolome),
-                                rowData = pathways,
-                                colData = phenotype)
+smokers <-
+  SummarizedExperiment(
+    assays = list(metabolomics = metabolome),
+    rowData = pathways,
+    colData = phenotype
+  )
 ```
 
 
 # GatherNetworks Function
 
-GatherNetworks queries the KEGG API to discover molecular interactions and build a network graph between measured metabolites.
+GatherNetworks queries the KEGG API to discover molecular interactions and 
+build a network graph between measured metabolites.
 
 GatherNetworks takes 4 arguments 
 
@@ -145,36 +199,45 @@ GatherNetworks takes 4 arguments
 
 `keggID` - a string of the column name in pathway data containing KEGG IDs
 
-`species` - a three letter species IDs can be found by running `keggList("organism")`
+`species` - a three letter species IDs can be found by 
+running `keggList("organism")`
 
-`minPathwaySize` - this argument filters KEGG pathways that contain fewer metabolites than the number specified
+`minPathwaySize` - this argument filters KEGG pathways that contain fewer 
+metabolites than the number specified
 
 ## Get species ID
 
-Our data were gathered from humans, so we will use the three letter species code "hsa".
+Our data were gathered from humans, so we will use the three letter species 
+code "hsa".
 
 ```{r}
-head(keggList("organism"))[,2:3]
+head(keggList("organism"))[, 2:3]
 ```
 ## Run GatherNetworks
 
 ```{r}
-networks <- GatherNetworks(SE = smokers, 
-                           keggID = "kegg_id", 
-                           species = "hsa",
-                           minPathwaySize = 5)
+networks <- GatherNetworks(
+  SE = smokers,
+  keggID = "kegg_id",
+  species = "hsa",
+  minPathwaySize = 5
+)
 ```
 
 
 # PaIRKAT function
 
-PaIRKAT can be used to get a kernel score for all pathways found in GatherNetworks. PaIRKAT takes 3 arguments:
+PaIRKAT can be used to get a kernel score for all pathways found in 
+GatherNetworks. PaIRKAT takes 3 arguments:
 
-`formula.H0` - The null model in the "formula" format used in lm and glm functions.
+`formula.H0` - The null model in the "formula" format used in lm and glm 
+functions.
 
 `networks` - networks object obtained with GatherNetworks
 
-`tau`	- A parameter to control the amount of smoothing, analogous to a bandwidth parameter in kernel smoothing. We found 1 often gave reasonable results, as over-smoothing can lead to inflated Type I errors.
+`tau` - A parameter to control the amount of smoothing, analogous to a 
+bandwidth parameter in kernel smoothing. We found 1 often gave reasonable 
+results, as over-smoothing can lead to inflated Type I errors.
 
 ```{r, message = F, warning = F}
 # run PaIRKAT
@@ -185,11 +248,17 @@ output <- PaIRKAT(log_FEV1_FVC_ratio ~ age,
 
 ## View Results
 
-The formula call and results of the kernel test can be viewed by calling items from the PaIRKAT function output. In our example, the first result can be interpreted as follows:
+The formula call and results of the kernel test can be viewed by calling items 
+from the PaIRKAT function output. In our example, the first result can be 
+interpreted as follows:
 
-Glycerophospholipid metabolism has a significant relationship with log_FEV1_FVC_ratio when controlling for age (p = 3.9e-05). Similarly, Lysine degradation	has a significant relationship with log_FEV1_FVC_ratio when controlling for age (p = 1.0e-04). etc.
+Glycerophospholipid metabolism has a significant relationship with 
+log_FEV1_FVC_ratio when controlling for age (p = 3.9e-05). 
+Similarly, Lysine degradation	has a significant relationship with 
+log_FEV1_FVC_ratio when controlling for age (p = 1.0e-04). etc.
 
 ```{r}
+library(dplyr)
 # view formula call
 output$call
 
@@ -199,12 +268,16 @@ output$results %>% arrange(p.value) %>% head()
 
 ## Visualize Networks
 
-To look further into significant metabolic pathways, it is possible to plot pathway networks using the plotNetworks function and passing the networks object along with one of the pathway names as a string. To visualize all networks, pass "all" to the pathways argument. 
+To look further into significant metabolic pathways, it is possible to plot 
+pathway networks using the plotNetworks function and passing the networks 
+object along with one of the pathway names as a string. To visualize all 
+networks, pass "all" to the pathways argument. 
 
 ```{r}
 plotNetworks(networks = networks, 
              pathway = "Glycerophospholipid metabolism")
 ```
+
 # Session Information
 ```{r}
 sessionInfo()
