@@ -1,7 +1,16 @@
 #' @title Perform PaIRKAT on the output from the GatherNetworks function
 #' @name PaIRKAT
-#' @description PaIRKAT is a method for including known biological structures
-#' into the kernel association test
+#' @description 
+#' 
+#' Pathway Integrated Regression-based Kernel Association Test (PaIRKAT) is a 
+#' model framework for assessing statistical relationships between networks 
+#' and some outcome of interest while adjusting for 
+#' potential confounders and covariates.
+#' 
+#' Use of PaIRKAT is motivated by the analysis of networks of metabolites
+#' from a metabolomics assay and the relationship of those networks with a
+#' phenotype or clinical outcome of interest, though the method can be
+#' generalized to other domains.
 #'
 #' @param formula.H0 The null model in the "formula" format used
 #' in \code{\link[stats]{lm}} and \code{\link[stats]{glm}} functions

@@ -22,8 +22,15 @@ inflated Type I errors.}
 a list object containing the formula call and results by pathway
 }
 \description{
-PaIRKAT is a method for including known biological structures
-into the kernel association test
+Pathway Integrated Regression-based Kernel Association Test (PaIRKAT) is a 
+model framework for assessing statistical relationships between networks 
+and some outcome of interest while adjusting for 
+potential confounders and covariates.
+
+Use of PaIRKAT is motivated by the analysis of networks of metabolites
+from a metabolomics assay and the relationship of those networks with a
+phenotype or clinical outcome of interest, though the method can be
+generalized to other domains.
 }
 \details{
 The PaIRKAT method is to update the feature matrix, \eqn{Z},

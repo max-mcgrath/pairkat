@@ -1,7 +1,8 @@
 #' @title Plot networks created by GatherNetworks function
 #' @name plotNetworks
-#' @description PaIRKAT is a method for including known biological
-#' structures into the kernel association test
+#' @description Helper function for plotting networks of metabolites gathered
+#' from the KEGG pathways database using the 
+#' \code{\link[pairkat]{GatherNetworks}} function.
 #'
 #' @param networks networks object obtained
 #' with \code{\link[pairkat]{GatherNetworks}}

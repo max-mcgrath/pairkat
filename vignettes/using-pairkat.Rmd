@@ -47,8 +47,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-PaIRKAT is model framework for assessing statistical relationships between 
-networks of metabolites (pathways) and an outcome of interest (phenotype). 
+Pathway Integrated Regression-based Kernel Association Test (PaIRKAT) is a 
+model framework for assessing statistical relationships between networks 
+and some outcome of interest while adjusting for 
+potential confounders and covariates.
+
+The PaIRKAT method is motivated by the analysis of networks of metabolites
+from a metabolomics assay and the relationship of those networks with a
+phenotype or clinical outcome of interest, though the method can be generalized 
+to other domains.
+
 PaIRKAT queries the KEGG database to determine interactions between 
 metabolites from which network connectivity is constructed. This model 
 framework improves testing power on high dimensional data by including 
@@ -139,7 +147,10 @@ with a 1, otherwise 0.
 period of time. It is calculated by multiplying the number of packs of 
 cigarettes smoked per day by the number of years the person has smoked.
 
-
+The example data are already packaged as a SummarizedExperiment. We will extract
+each of the components to look at their structures. Phenotype data are saved
+in the colData partition of the SummarizedExperiment can can be extracted as
+follows:
 
 ```{r, message=F, warning = F}
 phenotype <- colData(smokers)
@@ -152,6 +163,10 @@ Pathway data primarily functions to link metabolite names with KEGG ID's.
 Row names should be metabolite names and one column should contain KEGG IDs. 
 Other columns may be present if desired.
 
+Pathway data are saved
+in the rowData partition of the SummarizedExperiment can can be extracted as
+follows:
+
 ```{r}
 pathways <- rowData(smokers)
 head(pathways)[, 1:2]
@@ -161,6 +176,11 @@ head(pathways)[, 1:2]
 
 Metabolite assay data should have metabolite names as row names (matching 
 pathway data names) and subject IDs as column names.
+
+Metabolite Assay data are saved
+in the assays partition of the SummarizedExperiment. Multiple assays can be 
+stored in the SummarizedExperiment object. PaIRKAT relies on the assay to be 
+named "metabolomics". The assay data can can be extracted as follows:
 
 ```{r}
 metabolome <- assays(smokers)$metabolomics
@@ -173,12 +193,10 @@ Once the three components are formatted correctly, it is straightforward to
 add these dataframes to the SummarizedExperiment object with the 
 SummarizedExperiment function.
 
-In this example, we save our SummarizedExperiment to an object called `smokers`
+In this example, we re-save our SummarizedExperiment data to an object 
+called `smokers`
 
 ```{r}
-#load SummarizedExperiment library
-library(SummarizedExperiment)
-
 smokers <-
   SummarizedExperiment(
     assays = list(metabolomics = metabolome),
