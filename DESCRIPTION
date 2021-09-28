@@ -1,7 +1,7 @@
 Package: pairkat
 Type: Package
 Title: PaIRKAT
-Version: 0.99.2
+Version: 0.99.3
 Authors@R: c(person("Charlie", 
                     "Carpenter", 
                     email = "charles.carpenter@cuanschutz.edu", 
