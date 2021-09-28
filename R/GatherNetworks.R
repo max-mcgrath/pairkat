@@ -147,15 +147,30 @@ pathList <- function(pathDat, .pathID, ms, s_id) {
     compId <- pathDat[, .pathID]
     compId <- unlist(strsplit(compId[!is.na(compId)], "[,]"))
     
+    # Get pathway data from keggGet in batches of 10
+    comps <- list()
+    batches <- ceiling(length(hsapath)/10)
+    max_path <- length(hsapath)
+    for (i in seq_len(batches)){
+        if (i == batches){
+            getPaths <- hsapath[seq(from = i*10 - 9, to = max_path)]
+            got <- keggGet(getPaths)
+            names(got) <- getPaths
+            comps <- append(comps, got)
+        }
+        else{
+            getPaths <- hsapath[seq(from = i*10 - 9, to = i*10)]
+            got <- keggGet(getPaths)
+            names(got) <- getPaths
+            comps <- append(comps, got)
+        }
+    }
     
-    comps <-
-        lapply(hsapath, function(p)
-            try(keggGet(p)[[1]], silent = TRUE)
-        )
-    names(comps) <- hsapath
+    # remove failed pathway get
     keepPaths <- unlist(lapply(comps, function(p)
         is(p, "list")))
     comps <- comps[keepPaths]
+    
     results <- data.frame(keggPath = names(comps),
                           stringsAsFactors  =  FALSE)
     comp <- lapply(comps, function(p)
