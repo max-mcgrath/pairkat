@@ -1,7 +1,7 @@
 Package: pairkat
 Type: Package
 Title: PaIRKAT
-Version: 0.99.3
+Version: 0.99.4
 Authors@R: c(person("Charlie", 
                     "Carpenter", 
                     email = "charles.carpenter@cuanschutz.edu", 
@@ -30,6 +30,7 @@ Description: PaIRKAT is model framework for assessing statistical relationships
     managing this issue.
 License: GPL-3
 Encoding: UTF-8
+BugReports: https://github.com/Ghoshlab/pairkat/issues
 Depends: 
     R (>= 4.1),
     KEGGREST,

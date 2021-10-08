@@ -1,12 +1,12 @@
 #' @title Perform PaIRKAT on the output from the GatherNetworks function
 #' @name PaIRKAT
-#' @description 
-#' 
-#' Pathway Integrated Regression-based Kernel Association Test (PaIRKAT) is a 
-#' model framework for assessing statistical relationships between networks 
-#' and some outcome of interest while adjusting for 
+#' @description
+#'
+#' Pathway Integrated Regression-based Kernel Association Test (PaIRKAT) is a
+#' model framework for assessing statistical relationships between networks
+#' and some outcome of interest while adjusting for
 #' potential confounders and covariates.
-#' 
+#'
 #' Use of PaIRKAT is motivated by the analysis of networks of metabolites
 #' from a metabolomics assay and the relationship of those networks with a
 #' phenotype or clinical outcome of interest, though the method can be
@@ -66,6 +66,20 @@
 #' @export
 #'
 PaIRKAT <- function(formula.H0, networks, tau = 1) {
+
+    # check if a valid networks object has been passed
+    if(!is(networks, "list")){
+        stop("Invalid `networks` object. Pass a valid object created with
+             GatherNetworks function")
+    }
+    if(!all(c("networks","pdat","SE") %in% names(networks))){
+        stop("Invalid `networks` object. Pass a valid object created with
+             GatherNetworks function")
+    }
+    if(length(networks$networks) == 0){
+        stop("`networks` object contains 0 pathways")
+    }
+
     # Unpack SE object into phenotype, metabolite, and pathway data
     SE <- networks$SE
     mD <- assays(SE)[[1]]
@@ -76,7 +90,13 @@ PaIRKAT <- function(formula.H0, networks, tau = 1) {
     cD <- tibble::as_tibble(colData(SE), .name_repair = "minimal")
     cD$rowname <- rownames(colData(SE))
     cD <- tibble::column_to_rownames(cD, var = "rowname")
-    
+
+    # check formula.H0 for proper formatting
+    if (!is(formula.H0, "formula")){
+        stop("Invalid `formula.H0`. Please format
+             as `outcome ~ covariate_1 + covariate_2 + ... covariate_n`")
+    }
+
     # parse variables from formula
     keepVars <- paste(formula.H0[[2]])
     if (length(formula.H0[[3]]) > 1) {
@@ -87,27 +107,35 @@ PaIRKAT <- function(formula.H0, networks, tau = 1) {
     else {
         keepVars <- c(keepVars, paste(formula.H0[[3]]))
     }
-    
+
+    # remove + from list of variables
+    keepVars <- keepVars[keepVars != "+"]
+
+    # check if variables are in the data
+    if(!all(keepVars %in% names(cD))){
+        stop(keepVars[!(keepVars %in% names(cD))]," not found in data")
+    }
+
     cD <- cD[, names(cD) %in% keepVars]
-    
+
     # check for missing data and subset complete cases
     completeCases <- complete.cases(cD)
     cD <- cD[completeCases,]
     tmD <- tmD[completeCases,]
-    
+
     # check properties of outcome and format or throw appropriate errors
     outcome_vector <- cD[[keepVars[1]]]
-    
+
     if (length(unique(outcome_vector)) == 2) {
         out.type <- "binary"
-        message("Binary outcome detected. 
+        message("Binary outcome detected.
                 Null model will be a glm with logit link")
     } else if (length(unique(outcome_vector)) > 2) {
         out.type <- "continuous"
-        message("Continuous outcome detected. 
+        message("Continuous outcome detected.
                 Null model will be a linear model.")
     }
-    
+
     if (!is.numeric(outcome_vector)) {
         if (out.type == "binary") {
             ref_level <- unique(outcome_vector)[1]
@@ -115,7 +143,7 @@ PaIRKAT <- function(formula.H0, networks, tau = 1) {
             outcome_vector[outcome_vector == ref_level] <- 0
             outcome_vector[outcome_vector == pos_level] <- 1
             cD[keepVars[1]] <- outcome_vector
-            
+
             warning(
                 "Binary outcome is non-numeric, encoding",
                 pos_level,
@@ -127,37 +155,37 @@ PaIRKAT <- function(formula.H0, networks, tau = 1) {
         else{
             stop("Invalid formula: outcome is non-numeric")
         }
-        
+
     }
-    
+
     # Perform kernel tests
     pp_frame <- NULL
-    
+
     for (i in seq_len(length(networks$networks))) {
         G <- networks$networks[[i]]
         varnames <- igraph::V(G)$label
         ZZ <- scale(tmD[, varnames[varnames %in% colnames(tmD)]])
-        
+
         ## normalized Laplacian
         L <- igraph::graph.laplacian(G, normalized = TRUE)
         rho <- median(dist(ZZ))
-        
+
         Z <- ZZ %*% solve(diag(nrow(L)) + tau * L)
-        
+
         K <- Gaussian_kernel(rho, Z)
-        
+
         if (out.type == "continuous") {
             pp <- SKAT.c(formula.H0, .data = cD, K = K)
         }
-        
+
         if (out.type == "binary") {
             pp <- SKAT.b(formula.H0, .data = cD, K = K)
         }
-        
+
         pp$pathway <- names(networks$networks[i])
         pp_frame <- rbind(pp_frame, as.data.frame(pp))
-        
-        
+
+
     }
     list(call = formula.H0, results = pp_frame[, c(3, 2, 1)])
 }
@@ -170,7 +198,7 @@ formula_fun <- function(Y, covs) {
     if (length(covs) > 1) {
         ff <- paste("~", paste(paste0("`", covs, "`"), collapse = "+"))
     } else if (length(covs) == 1) {
-        ff <- paste("~", paste0("`", covs, "`"))
+        ff <- paste0("~ `", covs, "`")
     } else{
         ff <- "~ 1"
     }
@@ -201,10 +229,9 @@ KAT.pval <- function(Q.all,
     for (i in i1) {
         tmp <- CompQuadForm::davies(Q.all[i], lambda, acc = acc, lim = lim)
         pval[i] = tmp$Qq
-        
+
         if (tmp$ifault > 0)
             warning("ifault = ", tmp$ifault)
-        # pval[i] = Sadd.pval(Q.all[i],lambda)
     }
     return(pval)
 }
@@ -218,25 +245,25 @@ SKAT.c <- function(formula.H0,
     formula.H0 <- formula(formula.H0)
     m0 <- lm(formula.H0, data = .data)
     mX <- model.matrix(formula.H0, data = .data)
-    
+
     res <- resid(m0)
     df <- nrow(mX) - ncol(mX)
     s2 <- sum(res ^ 2)
-    
+
     P0  <- diag(nrow(mX)) - mX %*% (solve(t(mX) %*% mX) %*% t(mX))
     PKP <- P0 %*% K %*% P0
     q <- as.numeric(res %*% K %*% res / s2)
-    
+
     ee <- eigen(PKP - q * P0, symmetric = TRUE)
     lambda <- ee$values[abs(ee$values) >= tol]
-    
+
     p.value <- KAT.pval(
         0,
         lambda = sort(lambda, decreasing = TRUE),
         acc = acc,
         lim = lim
     )
-    
+
     return(list(p.value = p.value, Q.adj = q))
 }
 
@@ -250,37 +277,37 @@ SKAT.b <- function(formula.H0,
     X1 <- model.matrix(formula.H0, .data)
     lhs <- formula.H0[[2]]
     y <- eval(lhs, .data)
-    
+
     y <- factor(y)
-    
-    
+
+
     if (nlevels(y) != 2) {
         stop('The phenotype is not binary!\n')
     } else {
         y <- as.numeric(y) - 1
     }
-    
+
     glmfit <- glm(y ~ X1 - 1, family = binomial)
-    
+
     betas <- glmfit$coef
     mu  <- glmfit$fitted.values
     eta <- glmfit$linear.predictors
     res.wk <- glmfit$residuals
     res <- y - mu
-    
+
     w   <- mu * (1 - mu)
     sqrtw <- sqrt(w)
-    
+
     adj <- sum((sqrtw * res.wk) ^ 2)
-    
+
     DX12 <- sqrtw * X1
-    
+
     qrX <- qr(DX12)
     Q <- qr.Q(qrX)
     Q <- Q[, seq_len(qrX$rank), drop = FALSE]
-    
+
     P0 <- diag(nrow(X1)) - Q %*% t(Q)
-    
+
     DKD <- tcrossprod(sqrtw) * K
     tQK <- t(Q) %*% DKD
     QtQK <- Q %*% tQK
@@ -288,14 +315,14 @@ SKAT.b <- function(formula.H0,
     q <- as.numeric(res %*% K %*% res) / adj
     ee <- eigen(PKP - q * P0, symmetric = TRUE, only.values = TRUE)
     lambda <- ee$values[abs(ee$values) >= tol]
-    
+
     p.value <- KAT.pval(
         0,
         lambda = sort(lambda, decreasing = TRUE),
         acc = acc,
         lim = lim
     )
-    
+
     return(list(p.value = p.value, Q.adj = q))
 }
 
@@ -358,7 +385,7 @@ Liu.pval = function(Q, lambda) {
     }
     muX = l + d
     sigmaX = sqrt(2) * a
-    
+
     Q.Norm = (Q - muQ) / sigmaQ
     Q.Norm1 = Q.Norm * sigmaX + muX
     pchisq(Q.Norm1,
