@@ -1,7 +1,7 @@
 Package: pairkat
 Type: Package
 Title: PaIRKAT
-Version: 1.1.0
+Version: 1.1.1
 Authors@R: c(person("Charlie", 
                     "Carpenter", 
                     email = "charles.carpenter@cuanschutz.edu", 
@@ -9,7 +9,12 @@ Authors@R: c(person("Charlie",
              person("Cameron", 
                     "Severn", 
                     email = "cameron.severn@gmail.com", 
-                    role = c("cre","aut")))
+                    role = c("aut"))
+	     person("Max", 
+                    "McGrath", 
+                    email = "max.mcgrath@ucdenver.edu", 
+                    role = c("cre","aut"))
+)
 Description: PaIRKAT is model framework for assessing statistical relationships 
     between networks of metabolites (pathways) and an outcome of interest 
     (phenotype). PaIRKAT queries the KEGG database to determine interactions 
