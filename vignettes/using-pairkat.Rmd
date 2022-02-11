@@ -293,7 +293,7 @@ networks, pass "all" to the pathways argument.
 
 ```{r}
 plotNetworks(networks = networks, 
-             pathway = "Histidine metabolism")
+             pathway = "Glycerophospholipid metabolism")
 ```
 
 # Session Information
