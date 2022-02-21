@@ -22,9 +22,9 @@ inflated Type I errors.}
 a list object containing the formula call and results by pathway
 }
 \description{
-Pathway Integrated Regression-based Kernel Association Test (PaIRKAT) is a 
-model framework for assessing statistical relationships between networks 
-and some outcome of interest while adjusting for 
+Pathway Integrated Regression-based Kernel Association Test (PaIRKAT) is a
+model framework for assessing statistical relationships between networks
+and some outcome of interest while adjusting for
 potential confounders and covariates.
 
 Use of PaIRKAT is motivated by the analysis of networks of metabolites
@@ -46,7 +46,6 @@ See Carpenter 2021 for complete details on PaIRKAT and Smola 2003
 for information about graph regularization
 }
 \examples{
-library(SummarizedExperiment)
 data(smokers)
 
 # Query KEGGREST API

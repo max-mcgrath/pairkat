@@ -50,7 +50,6 @@
 #' a list object containing the formula call and results by pathway
 #'
 #' @examples
-#' library(SummarizedExperiment)
 #' data(smokers)
 #'
 #' # Query KEGGREST API
@@ -220,6 +219,7 @@ Gaussian_kernel <- function(rho, Z) {
 # https://onlinelibrary.wiley.com/doi/abs/10.1002/gepi.21934
 
 #Compute the tail probability of 1-DF chi-square mixtures
+#' @importFrom CompQuadForm davies
 KAT.pval <- function(Q.all,
                      lambda,
                      acc = 1e-9,

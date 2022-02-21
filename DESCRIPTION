@@ -2,19 +2,19 @@ Package: pairkat
 Type: Package
 Title: PaIRKAT
 Version: 1.1.1
-Authors@R: c(person("Charlie", 
-                    "Carpenter", 
-                    email = "charles.carpenter@cuanschutz.edu", 
-                    role = c("aut")),
-             person("Cameron", 
-                    "Severn", 
-                    email = "cameron.severn@gmail.com", 
-                    role = c("aut"))
-	     person("Max", 
-                    "McGrath", 
-                    email = "max.mcgrath@ucdenver.edu", 
-                    role = c("cre","aut"))
-)
+Authors@R: 
+    c(person("Charlie",
+             "Carpenter", 
+             email = "charles.carpenter@cuanschutz.edu",
+             role = c("aut")),
+      person("Cameron",
+             "Severn",
+             email = "cameron.severn@gmail.com",
+             role = c("aut")),
+      person("Max",
+             "McGrath",
+             email = "max.mcgrath@ucdenver.edu",
+             role = c("cre","aut")))
 Description: PaIRKAT is model framework for assessing statistical relationships 
     between networks of metabolites (pathways) and an outcome of interest 
     (phenotype). PaIRKAT queries the KEGG database to determine interactions 
@@ -37,16 +37,14 @@ License: GPL-3
 Encoding: UTF-8
 BugReports: https://github.com/Ghoshlab/pairkat/issues
 Depends: 
-    R (>= 4.1),
-    KEGGREST,
-    S4Vectors,
+    R (>= 4.1)
+Imports: 
     SummarizedExperiment,
+    KEGGREST,
     igraph,
     data.table,
     methods,
-    stats
-Imports: 
-    dplyr,
+    stats,
     magrittr,
     CompQuadForm,
     tibble
@@ -55,5 +53,6 @@ RoxygenNote: 7.1.2
 Suggests: 
     rmarkdown,
     knitr,
-    BiocStyle
+    BiocStyle,
+    dplyr
 VignetteBuilder: knitr

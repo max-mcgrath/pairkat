@@ -20,13 +20,24 @@
 #' igraph network objects
 #'
 #' @examples
-#'
-#' library(SummarizedExperiment)
 #' data(smokers)
 #' # Query KEGGREST API
 #'
 #' networks <- GatherNetworks(SE = smokers, keggID = "kegg_id",
 #' species = "hsa", minPathwaySize = 5)
+#' 
+#' @importFrom KEGGREST keggList
+#' @importFrom KEGGREST keggGet
+#' @importFrom KEGGREST keggLink
+#' @importFrom SummarizedExperiment assays colData rowData
+#' @importFrom tibble as_tibble column_to_rownames rownames_to_column
+#' @importFrom stats binomial complete.cases dist formula glm lm median 
+#'   model.matrix pchisq pnorm resid uniroot
+#' @importFrom igraph V graph.laplacian graph_from_adjacency_matrix
+#' @importFrom data.table transpose
+#' @importFrom methods is
+#' @importFrom magrittr %>%
+#' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #'
 #' @export
 #'

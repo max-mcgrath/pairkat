@@ -30,8 +30,6 @@ Queries KEGG database for known molecular interactions between
 included metabolites via the KEGGREST API.
 }
 \examples{
-
-library(SummarizedExperiment)
 data(smokers)
 # Query KEGGREST API
 

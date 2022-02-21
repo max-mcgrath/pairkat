@@ -28,7 +28,6 @@ from the KEGG pathways database using the
 Plots the specified network(s) as an \code{\link[igraph]{igraph}}
 }
 \examples{
-library(SummarizedExperiment)
 data(smokers)
 
 # Query KEGGREST API
@@ -41,7 +40,7 @@ plotNetworks(networks)
 # Plot specific network
 plotNetworks(networks,
 pathway = "Glycerophospholipid metabolism",
-layout = layout_with_kk,
+layout = igraph::layout_with_kk,
 main = "Glycerophospholipid Metabolism")
 
 }
