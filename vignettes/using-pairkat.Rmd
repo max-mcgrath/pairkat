@@ -296,6 +296,38 @@ plotNetworks(networks = networks,
              pathway = "Glycerophospholipid metabolism")
 ```
 
+
+# Using PaIRKAT with RaMP-DB
+
+PaIRKAT is currently being updated to use RaMP-DB in addition to KEGG. Below
+are the added functions. More details will be added soon.
+
+```{r, eval = FALSE}
+library(SummarizedExperiment)
+library(magrittr)
+data(smokers)
+smokersRaMP <- smokers
+rowData(smokersRaMP) <- rowData(smokers) %>%
+    as.data.frame() %>%
+    dplyr::mutate(kegg_id = paste0("kegg:", kegg_id))
+
+dbName <- "ramp2"
+conPass <- ""
+
+pkg.globals <- setConnectionToRaMP(dbname = dbName, conpass = conPass)
+
+networksRaMP <- GatherNetworksRaMP(SE = smokersRaMP, IDs = "kegg_id",
+                                   minPathwaySize = 5)
+
+networksRaMP$pdat <- "placeholder"
+
+resultsRaMP <- PaIRKATRaMP(log_FEV1_FVC_ratio ~ age, networks = networksRaMP)
+
+
+
+```
+
+
 # Session Information
 ```{r}
 sessionInfo()
