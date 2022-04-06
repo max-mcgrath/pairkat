@@ -32,7 +32,8 @@
 #'                                minPathwaySize = 5)
 #' }
 #' 
-#' @importFrom RaMP setConnectionToRaMP getPathwayFromAnalyte rampFastCata
+#' @importFrom jsonlite toJSON fromJSON
+#' @importFrom httr POST
 #' @importFrom SummarizedExperiment assays colData rowData
 #' @importFrom tibble as_tibble column_to_rownames rownames_to_column
 #' @importFrom stats binomial complete.cases dist formula glm lm median 
@@ -42,6 +43,7 @@
 #' @importFrom data.table transpose
 #' @importFrom methods is
 #' @importFrom magrittr %>%
+#' @importFrom dplyr select mutate
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #'
 #' @export
@@ -113,13 +115,33 @@ GatherNetworksRaMP <- function(SE, IDs, minPathwaySize = 5) {
     # pkg.globals <- setConnectionToRaMP(dbname = dbName, conpass = conPass)
     
     # Get pathways associated with analytes
-    pathwaydfids <- getPathwayFromAnalyte(metabolites)
+    metJSON <- jsonlite::toJSON(list(analytes = metabolites))
+    response <- httr::POST(
+        "https://ramp-api-alpha.ncats.io/api/pathways-from-analytes",
+        body = metJSON)
+    pathwaydfids <- jsonlite::fromJSON(rawToChar(response$content))$data
+    pathwaydfids <- dplyr::select(pathwaydfids,
+                                 "commonName" = commonName,
+                                 "pathwayName" = pathwayName,
+                                 "pathwaysource" = pathwaySource,
+                                 "pathwaysourceId" = pathwayId) %>%
+        mutate(commonName = tolower(commonName))
     
     # Create list of all pathway names
     pathways <- unique(pathwaydfids$pathwayName)
     
     # Get genes which catalyze analytes
-    new.metabolites <- rampFastCata(analytes = metabolites)
+    metJSON <- jsonlite::toJSON(list(analyte = metabolites))
+    response <- httr::POST(
+        "https://ramp-api-alpha.ncats.io/api/common-reaction-analytes",
+        body = metJSON)
+    new.metabolites <- jsonlite::fromJSON(rawToChar(response$content))$data
+    new.metabolites <- dplyr::select(new.metabolites,
+                              "Input_Analyte" = input_common_names,
+                              "Input_CatalyzedBy_CommonName" = 
+                                  rxn_partner_common_name,
+                              "Input_CatalyzedBy_SourceIds" = 
+                                  rxn_partner_ids)
     
     # Get edges - defined as analytes which are both catalyzed by the same gene
     #   and are within the same pathway
@@ -128,7 +150,7 @@ GatherNetworksRaMP <- function(SE, IDs, minPathwaySize = 5) {
     names(b) <- c("Output_Analyte", "Input_CatalyzedBy_CommonName")
     c <- merge(a, b, all = T)
     d <- tolower(.colwise(c[c$Input_Analyte != c$Output_Analyte, 2:3]))
-    filtered_pathways <- pathwaydfids[pathwaydfids$commonName %in% d,1:2]
+    filtered_pathways <- pathwaydfids[pathwaydfids$commonName %in% d, 1:2]
     colnames(d) <- c("Input_Analyte", "Output_Analyte")
     # this part is slow, could be improved
     e <- merge(d, filtered_pathways, by.x = "Input_Analyte", 

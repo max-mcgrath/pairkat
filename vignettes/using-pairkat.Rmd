@@ -311,11 +311,6 @@ rowData(smokersRaMP) <- rowData(smokers) %>%
     as.data.frame() %>%
     dplyr::mutate(kegg_id = paste0("kegg:", kegg_id))
 
-dbName <- "ramp2"
-conPass <- ""
-
-pkg.globals <- setConnectionToRaMP(dbname = dbName, conpass = conPass)
-
 networksRaMP <- GatherNetworksRaMP(SE = smokersRaMP, IDs = "kegg_id",
                                    minPathwaySize = 5)
 
