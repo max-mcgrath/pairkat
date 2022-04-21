@@ -95,7 +95,7 @@ GatherNetworksRaMP <- function(SE, IDs, minPathwaySize = 5) {
     }
     
     # Create single vector of relevant IDs
-    metabolites <- pD %>% select(all_of(IDs))
+    metabolites <- select(pD, all_of(IDs))
     metabolites <- unlist(metabolites)
     metabolites <- unname(metabolites)
     metabolites <- metabolites[!is.na(metabolites)]
