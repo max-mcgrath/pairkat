@@ -42,4 +42,5 @@ networks <- GatherNetworksRaMPLocal(SE = smokers, ID = "kegg_id",
                                minPathwaySize = 5)
 }
 
+
 }

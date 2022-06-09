@@ -49,10 +49,12 @@ Imports:
     CompQuadForm,
     tibble
 biocViews: Software, Metabolomics, KEGG, Pathways, Network, GraphAndNetwork, Regression
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 Suggests: 
     rmarkdown,
     knitr,
     BiocStyle,
-    dplyr
+    dplyr,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
+Config/testthat/edition: 3

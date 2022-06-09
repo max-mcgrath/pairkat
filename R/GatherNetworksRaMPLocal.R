@@ -32,7 +32,7 @@
 #'                                minPathwaySize = 5)
 #' }
 #' 
-#' @importFrom RaMP setConnectionToRaMP getPathwayFromAnalyte rampFastCata
+#' 
 #' @importFrom SummarizedExperiment assays colData rowData
 #' @importFrom tibble as_tibble column_to_rownames rownames_to_column
 #' @importFrom stats binomial complete.cases dist formula glm lm median 
@@ -59,27 +59,22 @@ GatherNetworksRaMPLocal <- function(SE, IDs, minPathwaySize = 5) {
         stop("Minimum pathway size should be 2 or more")
     }
     
-    # TODO: Update ID to IDs (make function work with multiple ID columns)
-    ID <- IDs
-    
-    # Check RaMP connection - currently not sure if necessary so commented out
-    # connectToRaMP()
-    
     # Unpack SE object into phenotype, metabolite, and pathway data
     mD <- assays(SE)[[1]]
-    tmD <- .transposeTibbleLocal(mD)
+    tmD <- .transposeTibble(mD)
     pD <-
         tibble::as_tibble(rowData(SE), .name_repair = "minimal")
     pD$rowname <- rownames(rowData(SE))
-    pD <- column_to_rownames(pD, var = "rowname")
+    pD <- tibble::column_to_rownames(pD, var = "rowname")
     cD <-
         tibble::as_tibble(colData(SE), .name_repair = "minimal")
     cD$rowname <- rownames(colData(SE))
-    cD <- column_to_rownames(cD, var = "rowname")
+    cD <- tibble::column_to_rownames(cD, var = "rowname")
     
     # Validate Database IDs
-    if (!(ID %in% colnames(pD))) {
-        stop(ID,
+    if (!all(IDs %in% colnames(pD))) {
+        stop("ID(s): ",
+             IDs[!(IDs %in% colnames(pD))],
              " not found in SummarizedExperiment object rowData")
     }
     
@@ -97,8 +92,14 @@ GatherNetworksRaMPLocal <- function(SE, IDs, minPathwaySize = 5) {
         tmD <- tmD[, !(colnames(tmD) %in% remove_vars)]
     }
     
+    # Create single vector of relevant IDs
+    metabolites <- select(pD, all_of(IDs))
+    metabolites <- unlist(metabolites)
+    metabolites <- unname(metabolites)
+    metabolites <- metabolites[!is.na(metabolites)]
+    
     # Compile pathway data
-    rtn <- .getNetworksLocal(metabolites = pD[[ID]], tmD = tmD,
+    rtn <- .getNetworksLocal(metabolites = metabolites, tmD = tmD,
                         minPathwaySize = minPathwaySize)
     
     rtn$SE <- SE

@@ -83,9 +83,9 @@ PaIRKAT <- function(formula.H0, networks, tau = 1) {
     SE <- networks$SE
     mD <- assays(SE)[[1]]
     tmD <- transpose_tibble(mD)
-    pD <- tibble::as_tibble(rowData(SE), .name_repair = "minimal")
-    pD$rowname <- rownames(rowData(SE))
-    pD <- tibble::column_to_rownames(pD, var = "rowname")
+    # pD <- tibble::as_tibble(rowData(SE), .name_repair = "minimal")
+    # pD$rowname <- rownames(rowData(SE))
+    # pD <- tibble::column_to_rownames(pD, var = "rowname")
     cD <- tibble::as_tibble(colData(SE), .name_repair = "minimal")
     cD$rowname <- rownames(colData(SE))
     cD <- tibble::column_to_rownames(cD, var = "rowname")

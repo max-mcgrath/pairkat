@@ -195,7 +195,7 @@ GatherNetworksRaMP <- function(SE, IDs, minPathwaySize = 5) {
         
         rtn
     })
-    networks <- networks[lengths(networks) == 10]
+    networks <- networks[!unlist(lapply(networks, is.null))]
     
     return(list(networks = networks))
 }
