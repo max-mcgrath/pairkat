@@ -168,9 +168,20 @@ PaIRKATRaMP <- function(formula.H0, networks, tau = 1) {
     
     for (i in seq_len(length(networks$networks))) {
         G <- networks$networks[[i]]
-        # varnames <- igraph::V(G)$label
-        varnames <- names(igraph::V(G))
-        ZZ <- scale(tmD[, varnames[varnames %in% colnames(tmD)]])
+        
+        # Determine which DB IDs are present in network
+        idsInNetwork <- igraph::vertex_attr(G) |>
+            as.data.frame() |> 
+            select(all_of(networks$call$idCols)) |>
+            unlist(use.names = FALSE)
+        
+        # Determine the indices of rowData associated with above DB IDs
+        relevantIndices <- as.data.frame(rowData(SE)) |> 
+            select(all_of(networks$call$idCols)) |> 
+            apply(1, function(row) { 
+            any(idsInNetwork %in% row) })
+        
+        ZZ <- scale(tmD[, relevantIndices])
         
         ## normalized Laplacian
         L <- igraph::graph.laplacian(G, normalized = TRUE)

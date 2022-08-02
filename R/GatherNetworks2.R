@@ -57,6 +57,13 @@ GatherNetworks2 <- function(SE,
                             minPathwaySize = 5) {
     # Argument preparation
     database <- match.arg(database)
+    call <- as.list(match.call())
+    call <- list(call = call[[1]],
+                 idCols = idCols,
+                 database = database,
+                 nameCol = nameCol,
+                 species = species,
+                 minPathwaySize = minPathwaySize)
     
     # Input validation
     if (!is(SE, "SummarizedExperiment")) {
@@ -97,7 +104,8 @@ GatherNetworks2 <- function(SE,
     
     # Return list networks, pdat, and SE
     list(networks = c(keggRtn$networks, rampRtn$networks), 
-         pdat = c(keggRtn$pathData, rampRtn$pathData), SE = SE)
+         pdat = c(keggRtn$pathData, rampRtn$pathData), SE = SE,
+         call = call)
     
 }
 
