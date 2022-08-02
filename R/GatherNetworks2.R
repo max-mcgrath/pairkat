@@ -36,7 +36,7 @@
 #' }
 #' 
 #' @importFrom KEGGREST keggList keggGet keggLink
-#' @importFrom SummarizedExperiment assays colData rowData
+#' @importFrom SummarizedExperiment assay colData rowData
 #' @importFrom tibble as_tibble column_to_rownames rownames_to_column
 #' @importFrom stats binomial complete.cases dist formula glm lm median 
 #'     model.matrix pchisq pnorm resid uniroot
@@ -45,7 +45,7 @@
 #' @importFrom data.table transpose
 #' @importFrom methods is
 #' @importFrom magrittr %>%
-#' @importFrom dplyr select filter left_join distinct
+#' @importFrom dplyr select filter left_join distinct relocate all_equal
 #' @importClassesFrom SummarizedExperiment SummarizedExperiment
 #'
 #' @export
@@ -73,24 +73,22 @@ GatherNetworks2 <- function(SE,
     # Remove metabolites with zero variance
     SE <- .removeConstMets(SE)
     
-    # Create single vector of relevant IDs to use for network creation
-    metIDs <- as.data.frame(rowData(SE))
-    metIDs <- dplyr::select(metIDs, all_of(IDs))
-    metIDs <- unlist(metIDs)
-    metIDs <- unname(metIDs)
-    metIDs <- metIDs[!is.na(metIDs)]
+    # Extract database IDs from SE, store in appropriate form (vector for KEGG,
+    #   data frame for RaMP)
+    metIDs <- .prepareMetabolites(SE, IDs, database)
     
     # Get networks from appropriate database(s)
     if(database == "KEGG") {
         keggRtn <- .getNetworksKEGG(metIDs, species, minPathwaySize)
         rampRtn <- NULL
     } else if (database == "RaMP") {
-        rampRtn <- .getNetworksRaMP(metIDs, minPathwaySize)
+        rampRtn <- .getNetworksRaMP(metIDs, IDs, minPathwaySize)
         keggRtn <- NULL
     }
     
     # Return list networks, pdat, and SE
-    list(networks = c(keggRtn, rampRtn), pdat = NULL, SE = SE)
+    list(networks = c(keggRtn$networks, rampRtn$networks), 
+         pdat = c(keggRtn$pathData, rampRtn$pathData), SE = SE)
     
 }
 
@@ -109,6 +107,33 @@ GatherNetworks2 <- function(SE,
     }
     
     SE
+}
+
+# Extract database IDs from SE, store in appropriate form (vector for KEGG,
+#   data frame for RaMP)
+.prepareMetabolites <- function(SE, IDs, database) {
+    
+    metIDs <- as.data.frame(rowData(SE))
+    
+    if(database == "KEGG") {
+        # Create single vector of relevant IDs to use for network creation
+        metIDs <- dplyr::select(metIDs, all_of(IDs))
+        metIDs <- unlist(metIDs, use.names = FALSE)
+        metIDs <- metIDs[!is.na(metIDs)]
+    } else if (database == "RaMP") {
+        # Reduce to metabolites which have at least one database ID
+        indexNARows <- dplyr::select(metIDs, all_of(IDs)) |> 
+            apply(1, function(row) !all(is.na(row)))
+        metIDs <- metIDs[indexNARows, ]
+        
+        # Add internal uniqueID (essentially row number, but won't change as
+        #   DF gets chopped up and rearranged)
+        metIDs$internalID <- 1:nrow(metIDs)
+        metIDs <- metIDs |> relocate(internalID)
+        
+    } else {
+        stop(database, " not a supported database")
+    }
 }
 
 .getNetworksKEGG <- function(metIDs, species, minPathwaySize) {
@@ -134,6 +159,14 @@ GatherNetworks2 <- function(SE,
     
     # Remove NULL networks
     networks <- networks[!unlist(lapply(networks, is.null))]
+    
+    # Reduce PathData to those which remain in networks
+    pathData <- pathData[unlist(lapply(pathData, function (x) { x$NAME })) %in% 
+                             names(networks)]
+    
+    # Return list of networks, path data
+    list(networks = networks,
+         pathData = pathData)
     
 }
 
@@ -186,16 +219,58 @@ GatherNetworks2 <- function(SE,
     network <- igraph::simplify(network)
 }
 
-.getNetworksRaMP <- function(metIDs, minPathwaySize) {
+.createRaMPNetworks <- function(pathway, metIDs, reactions, minPathwaySize) {
+    
+    
+    # Get compound IDs that are present in pathway
+    metIDsInPathway <- names(pathway$COMPOUND)
+    
+    # Reduce to only those that are in OG data set
+    metIDsInPathway <- intersect(metIDsInPathway, unlist(metIDs))
+    metIDsIndex <- apply(metIDs, 1, function(row) { 
+        any(metIDsInPathway %in% row) })
+    metIDs <- metIDs[metIDsIndex, ]
+    
+    # Return NULL if fewer remaining nodes than minPathwaySize
+    if (nrow(metIDs) < minPathwaySize) return(NULL)
+    
+    # Reduce reactions to relevant ones
+    reactions <- reactions[reactions$metID %in% metIDsInPathway, ]
+    
+    # Create data frame of edges
+    edges <- dplyr::left_join(reactions, reactions, by = "reactionID")
+    
+    # Create data frame using unique IDs - this step is necessary to ensure we 
+    #   use all information (multiple IDs per metabolite), but also do not
+    #   end up with duplicate network structures
+    leftNodeID <- apply(edges, 1, function(row) {
+        metIDs$internalID[which(row[["metID.x"]] == metIDs, arr.ind = TRUE)[1]]
+    })
+    rightNodeID <- apply(edges, 1, function(row) {
+        metIDs$internalID[which(row[["metID.y"]] == metIDs, arr.ind = TRUE)[1]]
+    })
+    newEdges <- data.frame(leftNodeID, rightNodeID) %>%
+        dplyr::distinct() %>%
+        dplyr::filter(leftNodeID != rightNodeID)
+    
+    # Create iGraph network/graph object
+    network <- igraph::graph_from_data_frame(newEdges, directed = FALSE, 
+                                             vertices = metIDs)
+    
+    # Remove duplicate edges
+    network <- igraph::simplify(network)
+}
+
+.getNetworksRaMP <- function(metIDs, IDs, minPathwaySize) {
     
     # Create data frame of reaction/compound pairs
-    reactions <- .getReactionsRaMP(metIDs, 50)
+    reactions <- .getReactionsRaMP(metIDs, IDs, 50)
     
     # Get list of pathways
-    pathData <- .getRaMPPathways(metIDs, 50)
+    pathData <- .getRaMPPathways(metIDs, IDs, 50)
     
     # Create networks from pathway data
-    networks <- lapply(pathData, .createKEGGNetworks, metIDs, reactions,
+    networks <- lapply(pathData, .createRaMPNetworks, metIDs, reactions,
                        minPathwaySize)
     
     # Label networks with name of pathway
@@ -204,9 +279,22 @@ GatherNetworks2 <- function(SE,
     # Remove NULL networks
     networks <- networks[!unlist(lapply(networks, is.null))]
     
+    # Reduce PathData to those which remain in networks
+    pathData <- pathData[names(pathData) %in% names(networks)]
+    
+    # Return list of networks, path data
+    list(networks = networks,
+         pathData = pathData)
+    
 }
 
-.getReactionsRaMP <- function(metIDs, batchSize) {
+.getReactionsRaMP <- function(metIDs, IDs, batchSize) {
+    
+    # Create vector of all database IDs
+    metIDs <- dplyr::select(metIDs, all_of(IDs))
+    metIDs <- unlist(metIDs)
+    names(metIDs) <- NULL
+    metIDs <- metIDs[!is.na(metIDs)]
     
     # Partition metabolites into batches
     batches <- split(metIDs, as.integer((seq_along(metIDs) - 1) / batchSize))
@@ -220,28 +308,37 @@ GatherNetworks2 <- function(SE,
         newReactions <- jsonlite::fromJSON(rawToChar(response$content))$data
         newReactions
     })
+    names(reactions) <- NULL
     
     # Reduce to single data frame with reaction/metabolite pairs
     reactions <- dplyr::bind_rows(reactions)
     reactions <- dplyr::select(reactions, metID = input_analyte, 
-                          reactionID = rxn_partner_common_name)
+                          reactionID = rxn_partner_common_name,
+                          metCommonName = input_common_names)
     reactions <- dplyr::distinct(reactions)
     
 }
 
-.getRaMPPathways <- function(metIDs, batchSize) {
+.getRaMPPathways <- function(metIDs, IDs, batchSize) {
+    
+    # Create vector of all database IDs
+    metIDs <- dplyr::select(metIDs, all_of(IDs))
+    metIDs <- unlist(metIDs)
+    names(metIDs) <- NULL
+    metIDs <- metIDs[!is.na(metIDs)]
     
     # Partition metabolites into batches
     batches <- split(metIDs, as.integer((seq_along(metIDs) - 1) / batchSize))
     
     # Get pathways in batches
     pathways <- lapply(batches, function(batch){
-        metJSON <- jsonlite::toJSON(list(analytes = metIDs))
+        metJSON <- jsonlite::toJSON(list(analytes = batch))
         response <- httr::POST(
             "https://ramp-api-alpha.ncats.io/api/pathways-from-analytes",
             body = metJSON)
         pathways <- jsonlite::fromJSON(rawToChar(response$content))$data
     })
+    names(pathways) <- NULL
     
     pathways <- dplyr::bind_rows(pathways)
     pathways <- dplyr::distinct(pathways)
