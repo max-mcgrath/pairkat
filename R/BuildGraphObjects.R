@@ -1,7 +1,7 @@
 # Generate network based on which compounds are in pathway and data set -
 #   meant to be lapply'd to list of pathways i.e. pathway is single pathway obj
 .createNetworks <- function(pathway, metabolites, reactions, minPathwaySize,
-                            nameCol = NULL) {
+                            nameCol) {
     
     # Get compound IDs that are present in pathway
     metabolitesInPathway <- names(pathway$COMPOUND)

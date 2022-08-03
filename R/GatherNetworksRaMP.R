@@ -206,14 +206,3 @@ GatherNetworksRaMP <- function(SE, IDs, minPathwaySize = 5) {
 }
 
 
-# Custom function to transpose while preserving names
-.transposeTibble <- function(df) {
-    t_df <- data.table::transpose(df)
-    colnames(t_df) <- rownames(df)
-    rownames(t_df) <- colnames(df)
-    t_df <- t_df %>%
-        tibble::rownames_to_column() %>%
-        tibble::as_tibble()
-    t_df <- column_to_rownames(t_df, var = "rowname")
-    return(t_df)
-}

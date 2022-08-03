@@ -23,7 +23,6 @@ test_that("Check .removeConstMets()", {
                                  c("id1-1", "id1-2", "id1-3", "id1-4", NA),
                              id2 = 
                                  c("id2-1", "id2-2", "id2-3", NA, NA)))
-    # rownames(newSE) <- c(1, 2, 3, 4, 5)
     expect_true(identical(SummarizedExperiment::rowData(SE), 
                           SummarizedExperiment::rowData(newSE)))
     expect_true(identical(SummarizedExperiment::colData(SE), 
@@ -33,18 +32,21 @@ test_that("Check .removeConstMets()", {
 })
 
 suppressWarnings(SE <- pairkat:::.removeConstMets(SE))
-metIDsKEGG <- pairkat:::.prepareMetabolites(SE, c("id1"), "KEGG")
-metIDsRaMP <- pairkat:::.prepareMetabolites(SE, c("id1", "id2"), "RaMP")
+metIDsKEGG <- pairkat:::.prepareMetabolites(SE, c("id2"))
+metIDsRaMP <- pairkat:::.prepareMetabolites(SE, c("id1", "id2"))
 
 # Test that metabolite database IDs are properly prepared
 test_that("Check .prepareMetabolites()", {
-    expect_true(identical(metIDsKEGG,
-                c("id1-1", "id1-2", "id1-3", "id1-4")))
-    expect_true(dplyr::all_equal(metIDsRaMP,
-                          data.frame(
-                              internalID = 1:4,
-                              id1 = c("id1-1", "id1-2", "id1-3", "id1-4"),
-                              id2 = c("id2-1", "id2-2", "id2-3", NA))))
+    expect_true(dplyr::all_equal(metIDsKEGG,
+                                 data.frame(
+                                     internalID = 1:3,
+                                     id1 = c("id1-1", "id1-2", "id1-3"),
+                                     id2 = c("id2-1", "id2-2", "id2-3"))))
+    expect_true(dplyr::all_equal(
+        metIDsRaMP,
+        data.frame(internalID = 1:4,
+                   id1 = c("id1-1", "id1-2", "id1-3", "id1-4"),
+                   id2 = c("id2-1", "id2-2", "id2-3", NA))))
 })
 
 # Create test data corresponding to a simple network m3-m1-m2. However, two of
@@ -63,8 +65,8 @@ reactions <- data.frame(
     reactionID = c(rep("reaction1", 4), rep("reaction2", 2)))
 minPathwaySize <- 0
 
-testNetwork <- pairkat:::.createRaMPNetworks(pathway, metIDs, reactions, 
-                                             minPathwaySize)
+testNetwork <- pairkat:::.createNetworks(pathway, metIDs, reactions,
+                                         minPathwaySize, "db1")
 
 # Ensure that graphs have correct number of nodes, edges, and labels 
 #   (attributes)
